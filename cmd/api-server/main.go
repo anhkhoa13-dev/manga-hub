@@ -3,8 +3,10 @@ package main
 import (
 	"log"
 
-	"github.com/anhkhoa13-dev/mangahub/pkg/database"
 	"github.com/gin-gonic/gin"
+
+	"github.com/anhkhoa13-dev/mangahub/internal/auth"
+	"github.com/anhkhoa13-dev/mangahub/pkg/database"
 )
 
 func main() {
@@ -15,14 +17,17 @@ func main() {
 	}
 	defer db.Close()
 	log.Println("DB Connection active!")
+
+	// Setup handlers
+	authHandler := &auth.AuthHandler{DB: db}
 	
 	// Setup Gin Router
 	r := gin.Default()
 
 	authGroup := r.Group("/auth")
 	{
-		authGroup.POST("/register", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Register endpoint"}) })
-		authGroup.POST("/login", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Login endpoint"}) })
+		authGroup.POST("/register", authHandler.Register)
+		authGroup.POST("/login", authHandler.Login)
 	}
 
 	mangaGroup := r.Group("/manga")
