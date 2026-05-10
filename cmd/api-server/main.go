@@ -4,12 +4,18 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 
 	"github.com/anhkhoa13-dev/mangahub/internal/auth"
 	"github.com/anhkhoa13-dev/mangahub/pkg/database"
 )
 
 func main() {
+	// Load .env
+	if err := godotenv.Load("../../.env"); err != nil {
+		log.Println("Warning: No .env file found or error loading it. Using OS environment variables.")
+	}
+
 	// Setup database
 	db, err := database.InitDB("../../data/mangahub.db")
 	if err != nil {
@@ -29,18 +35,24 @@ func main() {
 		authGroup.POST("/register", authHandler.Register)
 		authGroup.POST("/login", authHandler.Login)
 	}
-
-	mangaGroup := r.Group("/manga")
+	protectedGroup := r.Group("/")
+	protectedGroup.Use(auth.JWTMiddleware())
 	{
-		mangaGroup.GET("/", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Search manga"}) })
-		mangaGroup.GET("/:id", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Get manga details"}) })
-	}
+		mangaGroup := r.Group("/manga")
+		{
+			mangaGroup.GET("/", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Search manga"}) })
+			mangaGroup.GET("/:id", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Get manga details"}) })
+		}
 
-	userGroup := r.Group("/users")
-	{
-		userGroup.POST("/library", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Add to library"}) })
-		userGroup.GET("/library", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Get library"}) })
-		userGroup.PUT("/progress", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Update progress"}) })
+		userGroup := r.Group("/users")
+		{
+			userGroup.POST("/library", func(c *gin.Context) { 
+				userID := c.GetString("user_id")
+				c.JSON(200, gin.H{"message": "Add to library for user: " + userID}) 
+			})
+			userGroup.GET("/library", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Get library"}) })
+			userGroup.PUT("/progress", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Update progress"}) })
+		}
 	}
 	
 	log.Println("Starting HTTP API Server on :8080...")

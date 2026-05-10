@@ -1,12 +1,19 @@
 package utils
 
 import (
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
 
-var jwtSecret = []byte("mangahub_secret_key_2026")
+func GetJWTSecret() []byte {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		return []byte("default_fallback_secret") 
+	}
+	return []byte(secret)
+}
 
 type Claims struct {
 	UserID   string `json:"user_id"`
@@ -26,5 +33,5 @@ func GenerateToken(userID, username string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
+	return token.SignedString(GetJWTSecret())
 }
