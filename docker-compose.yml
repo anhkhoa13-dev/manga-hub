@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  mangahub-server:
+    build: .
+    container_name: mangahub_core
+    ports:
+      - "8080:8080" # HTTP API
+      - "9090:9090" # TCP Sync
+      - "9091:9091/udp" # UDP Notification
+      - "9092:9092" # gRPC Internal
+      - "9093:9093" # WebSocket Chat
+    volumes:
+      - ./data:/app/data
+    environment:
+      - JWT_SECRET=mangahub_secret_key_2026
+    restart: unless-stopped
