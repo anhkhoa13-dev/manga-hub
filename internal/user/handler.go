@@ -6,10 +6,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/anhkhoa13-dev/mangahub/internal/tcp"
 )
 
 type UserHandler struct {
 	DB *sql.DB
+	Broadcast chan tcp.ProgressUpdate
 }
 
 // DTOs
@@ -134,5 +137,15 @@ func (h *UserHandler) UpdateProgress(c *gin.Context) {
 		"chapter": req.CurrentChapter,
 	})
 
-	// TODO: Nơi đây sẽ kích hoạt TCP Broadcast trong Giai đoạn 2
+	// Gửi lên TCP Server để broadcast
+	if h.Broadcast != nil {
+		updateMsg := tcp.ProgressUpdate{
+			UserID:    userID,
+			MangaID:   req.MangaID,
+			Chapter:   req.CurrentChapter,
+			Timestamp: time.Now().Unix(),
+		}
+		// Bắn dữ liệu vào Channel để Goroutine của TCP tự lo liệu [cite: 1346]
+		h.Broadcast <- updateMsg 
+	}
 }

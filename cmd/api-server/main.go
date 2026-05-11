@@ -7,6 +7,8 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/anhkhoa13-dev/mangahub/internal/auth"
+	"github.com/anhkhoa13-dev/mangahub/internal/manga"
+	"github.com/anhkhoa13-dev/mangahub/internal/tcp"
 	"github.com/anhkhoa13-dev/mangahub/internal/user"
 	"github.com/anhkhoa13-dev/mangahub/pkg/database"
 )
@@ -25,9 +27,17 @@ func main() {
 	defer db.Close()
 	log.Println("DB Connection active!")
 
+	// Setup TCP Sync Server
+	tcpServer := tcp.NewServer(":9090")
+	go tcpServer.Start()
+
 	// Setup handlers
 	authHandler := &auth.AuthHandler{DB: db}
-	userHandler := &user.UserHandler{DB: db}
+	mangaHandler := &manga.MangaHandler{DB: db}
+	userHandler := &user.UserHandler{
+		DB:        db,
+		Broadcast: tcpServer.Broadcast, 
+	}
 	
 	// Setup Gin Router
 	r := gin.Default()
@@ -40,10 +50,10 @@ func main() {
 	protectedGroup := r.Group("/")
 	protectedGroup.Use(auth.JWTMiddleware())
 	{
-		mangaGroup := r.Group("/manga")
+		mangaGroup := protectedGroup.Group("/manga")
 		{
-			mangaGroup.GET("/", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Search manga"}) })
-			mangaGroup.GET("/:id", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Get manga details"}) })
+			mangaGroup.GET("/", mangaHandler.SearchManga)
+			mangaGroup.GET("/:id", mangaHandler.GetMangaDetails)
 		}
 
 		userGroup := protectedGroup.Group("/users")
