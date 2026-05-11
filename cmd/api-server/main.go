@@ -7,6 +7,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/anhkhoa13-dev/mangahub/internal/auth"
+	"github.com/anhkhoa13-dev/mangahub/internal/user"
 	"github.com/anhkhoa13-dev/mangahub/pkg/database"
 )
 
@@ -26,6 +27,7 @@ func main() {
 
 	// Setup handlers
 	authHandler := &auth.AuthHandler{DB: db}
+	userHandler := &user.UserHandler{DB: db}
 	
 	// Setup Gin Router
 	r := gin.Default()
@@ -44,14 +46,11 @@ func main() {
 			mangaGroup.GET("/:id", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Get manga details"}) })
 		}
 
-		userGroup := r.Group("/users")
+		userGroup := protectedGroup.Group("/users")
 		{
-			userGroup.POST("/library", func(c *gin.Context) { 
-				userID := c.GetString("user_id")
-				c.JSON(200, gin.H{"message": "Add to library for user: " + userID}) 
-			})
-			userGroup.GET("/library", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Get library"}) })
-			userGroup.PUT("/progress", func(c *gin.Context) { c.JSON(200, gin.H{"message": "Update progress"}) })
+			userGroup.POST("/library", userHandler.AddToLibrary)
+			userGroup.GET("/library", userHandler.GetLibrary)
+			userGroup.PUT("/progress", userHandler.UpdateProgress)
 		}
 	}
 	
