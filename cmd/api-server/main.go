@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
+	"github.com/anhkhoa13-dev/mangahub/grpc"
 	"github.com/anhkhoa13-dev/mangahub/internal/auth"
 	"github.com/anhkhoa13-dev/mangahub/internal/manga"
 	"github.com/anhkhoa13-dev/mangahub/internal/tcp"
@@ -52,6 +53,9 @@ func main() {
 			log.Fatalf("Failed to run WebSocket server: %v", err)
 		}
 	}()
+
+	// Setup gRPC Server
+	go grpc.Start(":9092", db, tcpServer.Broadcast)
 
 	// Setup handlers
 	authHandler := &auth.AuthHandler{DB: db}
