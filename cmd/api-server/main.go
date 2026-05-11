@@ -12,6 +12,7 @@ import (
 	"github.com/anhkhoa13-dev/mangahub/internal/tcp"
 	"github.com/anhkhoa13-dev/mangahub/internal/udp"
 	"github.com/anhkhoa13-dev/mangahub/internal/user"
+	"github.com/anhkhoa13-dev/mangahub/internal/websocket"
 	"github.com/anhkhoa13-dev/mangahub/pkg/database"
 )
 
@@ -36,6 +37,21 @@ func main() {
 	// Setup UDP Notification Server
 	udpServer := udp.NewServer(":9091") 
 	go udpServer.Start()
+
+	chatHub := websocket.NewHub()
+	go chatHub.Run()
+
+	// Setup WebSocket
+	go func() {
+		wsRouter := gin.Default()
+		
+		wsRouter.GET("/chat", auth.JWTMiddleware(), chatHub.HandleConnection)
+		
+		log.Println("[WebSocket] Chat Server is listening on :9093")
+		if err := wsRouter.Run(":9093"); err != nil {
+			log.Fatalf("Failed to run WebSocket server: %v", err)
+		}
+	}()
 
 	// Setup handlers
 	authHandler := &auth.AuthHandler{DB: db}
