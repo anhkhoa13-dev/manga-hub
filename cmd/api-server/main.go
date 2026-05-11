@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -9,6 +10,7 @@ import (
 	"github.com/anhkhoa13-dev/mangahub/internal/auth"
 	"github.com/anhkhoa13-dev/mangahub/internal/manga"
 	"github.com/anhkhoa13-dev/mangahub/internal/tcp"
+	"github.com/anhkhoa13-dev/mangahub/internal/udp"
 	"github.com/anhkhoa13-dev/mangahub/internal/user"
 	"github.com/anhkhoa13-dev/mangahub/pkg/database"
 )
@@ -31,6 +33,10 @@ func main() {
 	tcpServer := tcp.NewServer(":9090")
 	go tcpServer.Start()
 
+	// Setup UDP Notification Server
+	udpServer := udp.NewServer(":9091") 
+	go udpServer.Start()
+
 	// Setup handlers
 	authHandler := &auth.AuthHandler{DB: db}
 	mangaHandler := &manga.MangaHandler{DB: db}
@@ -47,6 +53,7 @@ func main() {
 		authGroup.POST("/register", authHandler.Register)
 		authGroup.POST("/login", authHandler.Login)
 	}
+
 	protectedGroup := r.Group("/")
 	protectedGroup.Use(auth.JWTMiddleware())
 	{
@@ -62,6 +69,24 @@ func main() {
 			userGroup.GET("/library", userHandler.GetLibrary)
 			userGroup.PUT("/progress", userHandler.UpdateProgress)
 		}
+	}
+
+	adminGroup := r.Group("/admin")
+	{
+		adminGroup.POST("/notify", func(c *gin.Context) {
+			var req struct {
+				MangaID string `json:"manga_id" binding:"required"`
+				Message string `json:"message" binding:"required"`
+			}
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid format"})
+				return
+			}
+
+			udpServer.Broadcast(req.MangaID, req.Message)
+
+			c.JSON(http.StatusOK, gin.H{"status": "Notification broadcasted"})
+		})
 	}
 	
 	log.Println("Starting HTTP API Server on :8080...")
