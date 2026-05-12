@@ -72,8 +72,8 @@ var startServerCmd = &cobra.Command{
 
 		go grpcServer.Start(":9092", db, tcpServer.Broadcast)
 
-		// 4. KHỞI CHẠY HTTP SERVER (Và giữ cho chương trình không bị thoát)
-		gin.SetMode(gin.ReleaseMode) // Tắt log debug rườm rà của Gin để màn hình CLI sạch đẹp
+		// 4. KHỞI CHẠY HTTP SERVE
+		gin.SetMode(gin.ReleaseMode)
 		r := gin.Default()
 
 		authHandler := &auth.AuthHandler{DB: db}
@@ -100,6 +100,27 @@ var startServerCmd = &cobra.Command{
 				userGroup.GET("/library", userHandler.GetLibrary)
 				userGroup.PUT("/progress", userHandler.UpdateProgress)
 			}
+		}
+
+		adminGroup := r.Group("/admin")
+		{
+			adminGroup.POST("/notify", func(c *gin.Context) {
+				var notifyData struct {
+					MangaID string `json:"manga_id"`
+					Message string `json:"message"`
+				}
+
+				if err := c.ShouldBindJSON(&notifyData); err != nil {
+					c.JSON(400, gin.H{"error": "Invalid JSON format"})
+					return
+				}
+				udpServer.Broadcast(notifyData.MangaID, notifyData.Message)
+
+				c.JSON(200, gin.H{
+					"status": "Notification sent via UDP!",
+					"data":   notifyData,
+				})
+			})
 		}
 
 		log.Println("✅ All systems go! HTTP API Server is listening on :8080")
