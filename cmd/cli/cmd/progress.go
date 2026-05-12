@@ -24,7 +24,7 @@ var updateProgressCmd = &cobra.Command{
 			"manga_id": mangaID,
 			"chapter":  chapter,
 		})
-		req, _ := http.NewRequest("PUT", "http://localhost:8080/users/progress", bytes.NewBuffer(reqBody))
+		req, _ := http.NewRequest("PUT", "http://172.20.10.3:8080/users/progress", bytes.NewBuffer(reqBody))
 		req.Header.Set("Authorization", "Bearer "+token)
 		
 		client := &http.Client{}
@@ -40,7 +40,7 @@ var syncCmd = &cobra.Command{
 	Short: "Start a real-time TCP sync listener",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("📡 Đang kết nối tới máy chủ đồng bộ TCP (Port 9090)...")
-		conn, err := net.Dial("tcp", "localhost:9090")
+		conn, err := net.Dial("tcp", "172.20.10.3:9090")
 		if err != nil {
 			fmt.Println("❌ Không thể kết nối tới TCP Server.")
 			return

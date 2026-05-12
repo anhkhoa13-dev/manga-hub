@@ -28,7 +28,7 @@ var searchCmd = &cobra.Command{
 		}
 
 		query := url.QueryEscape(args[0])
-		req, _ := http.NewRequest("GET", "http://localhost:8080/manga?q="+query, nil)
+		req, _ := http.NewRequest("GET", "http://172.20.10.3:8080/manga?q="+query, nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 
 		client := &http.Client{}

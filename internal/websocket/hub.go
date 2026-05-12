@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -56,7 +57,15 @@ func (h *ChatHub) Run() {
 			h.mu.Lock()
 			h.Clients[clientData.Conn] = clientData.Username
 			h.mu.Unlock()
-			log.Printf("[WebSocket] %s joined chat. Total: %d", clientData.Username, len(h.Clients))
+
+			go func(uname string) {
+				joinMsg := ChatMessage{
+					Username:  "System",
+					Message:   fmt.Sprintf("--- %s đã tham gia phòng chat ---", uname),
+					Timestamp: time.Now().Unix(),
+				}
+				h.Broadcast <- joinMsg
+			}(clientData.Username)
 
 		case conn := <-h.Unregister:
 			h.mu.Lock()

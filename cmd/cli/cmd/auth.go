@@ -22,7 +22,7 @@ var loginCmd = &cobra.Command{
 	Short: "Login to MangaHub",
 	Run: func(cmd *cobra.Command, args []string) {
 		reqBody, _ := json.Marshal(map[string]string{"username": username, "password": password})
-		resp, err := http.Post("http://localhost:8080/auth/login", "application/json", bytes.NewBuffer(reqBody))
+		resp, err := http.Post("http://172.20.10.3:8080/auth/login", "application/json", bytes.NewBuffer(reqBody))
 		if err != nil || resp.StatusCode != http.StatusOK {
 			fmt.Println("❌ Đăng nhập thất bại.")
 			return
@@ -42,7 +42,7 @@ var registerCmd = &cobra.Command{
 	Short: "Register a new account",
 	Run: func(cmd *cobra.Command, args []string) {
 		reqBody, _ := json.Marshal(map[string]string{"username": username, "password": password})
-		resp, _ := http.Post("http://localhost:8080/auth/register", "application/json", bytes.NewBuffer(reqBody))
+		resp, _ := http.Post("http://172.20.10.3:8080/auth/register", "application/json", bytes.NewBuffer(reqBody))
 		if resp.StatusCode == http.StatusCreated {
 			fmt.Println("✓ Đăng ký thành công! Hãy dùng 'mangahub auth login' để tiếp tục.")
 		} else {
