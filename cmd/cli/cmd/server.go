@@ -3,8 +3,11 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
+	"text/tabwriter"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -127,6 +130,50 @@ var startServerCmd = &cobra.Command{
 		if err := r.Run(":8080"); err != nil {
 			log.Fatalf("❌ HTTP server error: %v", err)
 		}
+	},
+}
+
+var healthCmd = &cobra.Command{
+	Use:   "health",
+	Short: "Kiểm tra trạng thái thực tế của các dịch vụ MangaHub",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Danh sách các dịch vụ cần kiểm tra
+		services := []struct {
+			Name string
+			Port string
+			Type string
+		}{
+			{"HTTP API", "8080", "tcp"},
+			{"TCP Sync", "9090", "tcp"},
+			{"UDP Notify", "9091", "udp"},
+			{"gRPC Svc", "9092", "tcp"},
+			{"WS Chat", "9093", "tcp"},
+		}
+
+		fmt.Println("🏥 Đang kiểm tra sức khỏe hệ thống...")
+		fmt.Println("---------------------------------------")
+
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+		fmt.Fprintln(w, "SERVICE\tPORT\tPROTOCOL\tSTATUS")
+		fmt.Fprintln(w, "-------\t----\t--------\t------")
+
+		for _, s := range services {
+			status := "🟢 ONLINE"
+			
+			// Thử kết nối tới port trong vòng 1 giây
+			address := net.JoinHostPort("172.20.10.3", s.Port) // Dùng IP của bạn
+			conn, err := net.DialTimeout(s.Type, address, 1*time.Second)
+			
+			if err != nil {
+				status = "🔴 OFFLINE"
+			} else {
+				conn.Close()
+			}
+
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", s.Name, s.Port, s.Type, status)
+		}
+		w.Flush()
+		fmt.Println("")
 	},
 }
 
