@@ -179,5 +179,5 @@ var healthCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(serverCmd)
-	serverCmd.AddCommand(statusServerCmd, startServerCmd)
+	serverCmd.AddCommand(statusServerCmd, startServerCmd, healthCmd)
 }
